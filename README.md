@@ -16,8 +16,9 @@
         npm install
 
 3.  Ejecutar app.js con metodo preferido
-    node src/app
-    nodemon src/app
+
+        node src/app
+        nodemon src/app
 
 \
 Se llama a la aplicación desde el root del proyecto ya que el archivo con los productos se encuentra ahí. Si quisiera llamarla desde /src, debería primero mover el archivo dentro de esa carpeta
