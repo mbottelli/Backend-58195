@@ -23,7 +23,7 @@ app.get('/products/:ProductId', (req, res) =>{
     let producto = manager.getProductById(id);
 
     if (!producto){
-        throw new Error("El producto solicitado no existe");
+        res.status(404).send('El producto solicitado no existe');
     }
 
     res.send(producto);
