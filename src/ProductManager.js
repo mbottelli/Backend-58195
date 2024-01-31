@@ -25,10 +25,9 @@ class ProductManager {
         } 
         let archivo = fs.readFileSync(this.path);
         this.productos = JSON.parse(archivo)
-        this.#id = Number(Object.keys(this.productos)[Object.keys(this.productos).length - 1]) + 2
-        // Revisa los objetos ya existentes y setea #id al proximo disponible
-        // Si se borrara un ID anterior se repetirían IDs, en un entorno real capaz sea mejor no borrar el objeto para mantener la secuencia y simplemente vaciar las propiedades.
-        // O usar otra forma de setear IDs
+        this.#id = (Math.max(...this.productos.map(producto => producto.id)) + 1) // Busca cual es el ID mas grande y le suma 1
+        // Esta solución me gusta mas que la anterior, pero van a quedar IDs vacios
+        // La unica excepcion es cuando se borrara el ultimo ID de la lista, en ese caso se recicla
         return true
     }
 
@@ -56,22 +55,22 @@ class ProductManager {
         }
     }
 
-    addProduct(title, description, price, thumbnail, code, stock){
+    addProduct(producto){
         this.lector();
-        let chequeo = this.productos.find(x => x.code === code);
+        let chequeo = this.productos.find(x => x.code === producto.code);
         if (chequeo != undefined){
             console.warn(`addProduct() - Codigo ${code} repetido`)
             return false
         }
-
-        let producto = {}
-        producto.id = this.#id++;
-        producto.title = title;
-        producto.description = description;
-        producto.price = price;
-        producto.thumbnail = thumbnail;
-        producto.code = code;
-        producto.stock = stock;
+        if (!producto.thumbnail) {
+            producto.thumbnail = 'Sin imagen'
+        }
+        if (!producto.status) {
+            producto.status = true
+        }
+        
+        producto = Object.assign({id: this.#id}, producto) // Para agregar el ID al principio del producto
+        // Mas adelante me tocará renegar con la validacion del tipo de dato
 
         for(var key in producto) {
             if(!producto[key]) {
@@ -85,23 +84,23 @@ class ProductManager {
         return true
     }
 
-    updateProduct (id, campo, valor) {
-        if (this.lector() !== true) { 
-            console.warn('updateProduct() - Lectura fallida')
-            return false
-        }
-        let i = id - 1
+    updateProduct (id, update) {
+        this.lector();
+        let i = this.productos.findIndex(x => x.id === id)
         if (this.productos[i] == undefined) {
             console.warn('updateProduct() - ID no encontrado')
             return false
         }
+        
+        let [property] = Object.keys(update); 
+        let [value] = Object.values(update);
+        // Desestructura el array para usar la propiedad y el valor
+        // Mas adelante se puede reutilizar para cambiar mas de 1 campo en una sola llamada
         let busqueda = this.getProductById(id);
-        busqueda[campo] = Number(valor)
+
+        busqueda[property] = value
         this.productos.splice((i), 1, busqueda)
-        if (this.escritor() !== true) {
-            console.warn('updateProduct() - Escritura fallida')
-            return false
-        }
+        this.escritor()
         return true
     }
 
@@ -110,7 +109,7 @@ class ProductManager {
             console.warn('deleteProduct() - Lectura fallida')
             return false
         }
-        let i = id - 1
+        let i = this.productos.findIndex(x => x.id === id)
         if (this.productos[i] == undefined) {
             console.warn('deleteProduct() - ID no encontrado')
             return false
@@ -125,18 +124,6 @@ class ProductManager {
 }
 
 module.exports = ProductManager;
-
-// --------------------------------------------------------------------------
-
-// Estos son los comandos de la prueba para el desafío 2
-
-// const manager = new ProductManager('./test.json');
-
-// console.log(manager.getProducts())
-// console.log(manager.addProduct('producto de prueba', 'Este es un producto prueba', 200, 'Sin imagen', '321', 25))
-// console.log(manager.getProductById(1))
-// console.log(manager.updateProduct(1, 'price', 28))
-// console.log(manager.deleteProduct(1))
 
 // --------------------------------------------------------------------------
 
