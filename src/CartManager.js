@@ -4,9 +4,9 @@ const { isStringObject, isNumberObject } = require('util/types');
 class CartManager {
     #id = 1
 
-    constructor(path){
+    constructor (path, file){
         this.folder = path
-        this.path = path + '/carritos.json'
+        this.path = path + file
         this.carts = []
     }
 

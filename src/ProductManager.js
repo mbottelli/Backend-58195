@@ -4,9 +4,9 @@ const { isStringObject, isNumberObject } = require('util/types');
 class ProductManager {
     #id = 1
 
-    constructor (path){
+    constructor (path, file){
         this.folder = path 
-        this.path = path + '/productos.json'
+        this.path = path + file
         this.productos = []
         this.properties = {
             id: 0,
@@ -39,9 +39,7 @@ class ProductManager {
         // Esta solución me gusta mas que la anterior, pero van a quedar IDs vacios
         // La unica excepcion es cuando se borrara el ultimo ID de la lista, en ese caso se recicla
 
-        if (isFinite(this.#id) === false) {
-            this.#id = 1
-        }
+        if (isFinite(this.#id) === false) this.#id = 1
         // Si el archivo se inicializa con un objeto vacio, la evaluación anterior es igual a -Infinity
         // De esta manera, al evaluarse un número infinito positivo, negativo, o NaN, simplemente revierte el valor a 1
         // Podría traer problemas si el input de IDs al crear objetos fuese manual, pero en este caso debería ser siempre automático y transparente para el usuario
@@ -59,9 +57,7 @@ class ProductManager {
         let propiedades = this.properties
         delete propiedades['id']
 
-        if (!('thumbnail' in a)) {
-            a.thumbnail = this.properties.thumbnail
-        }
+        if (!('thumbnail' in a)) a.thumbnail = this.properties.thumbnail
 
         let aKeys = Object.keys(a).sort()
         let pKeys = Object.keys(propiedades).sort()
@@ -101,7 +97,7 @@ class ProductManager {
         }
         // Segundo chequeo para validar las propiedades, que tenga todas las requeridas y sean validas; separe el ID para tener mejor trazabilidad del error.
 
-        if (!producto.thumbnail) { producto.thumbnail = this.properties.thumbnail}
+        if (!producto.thumbnail) producto.thumbnail = this.properties.thumbnail
         // Porque si no lo incluyen tiene que ir a un default
 
         for(var key in producto){
