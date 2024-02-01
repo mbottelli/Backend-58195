@@ -2,7 +2,7 @@ const { Router } = require('express');
 const router = Router();
 
 const products = require('../ProductManager')
-const manager = new products(__dirname+'/../files/productos.json');
+const manager = new products(__dirname+'/../files');
 
 router.get('/', (req, res) =>{
     let producto = manager.getProducts();

@@ -2,7 +2,7 @@ const { Router } = require('express');
 const router = Router();
 
 const carts = require('../CartManager')
-const manager = new carts(__dirname+'/../files/carritos.json');
+const manager = new carts(__dirname+'/../files');
 
 router.post('/', (req, res) =>{
     manager.addCart();

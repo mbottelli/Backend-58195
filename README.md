@@ -42,7 +42,7 @@ Una vez ejecutada la aplicación, la misma va a levantar un servidor web en el p
             "price": Numero
             "code": String
             "thumbnail": String (Opcional)
-            "state": Booleano (Opcional, default True)
+            "state": Booleano
       }
 
 - También acepta un param como subruta para especificar el ID de un producto a devolver. En caso de no existir el ID solicitado arroja error.
@@ -67,7 +67,7 @@ Una vez ejecutada la aplicación, la misma va a levantar un servidor web en el p
 
       localhost:8080/api/carts/1
 
-- Finalmente se pueden agregar productos a un carrito mediante la ruta "/api/carts/:cid/products/:pid", donde el parametro :cid representa el ID del carrito y :pid representa el ID del producto. En caso de no existir el carrito devolverá error; en caso de no existir el producto lo crea. De momento solo agrega de a 1 producto.
+- Finalmente se pueden agregar productos a un carrito mediante la ruta "/api/carts/:cid/products/:pid", donde el parametro :cid representa el ID del carrito y :pid representa el ID del producto. En caso de no existir el carrito devolverá error; en caso de no existir el producto lo crea. De momento solo agrega de a 1 producto, y solo se pueden agregar productos que hayan sido creados mediante los metodos de productos.
 
       localhost:8080/api/carts/3/products/8
 

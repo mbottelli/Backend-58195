@@ -4,9 +4,19 @@ const { isStringObject, isNumberObject } = require('util/types');
 class ProductManager {
     #id = 1
 
-    constructor (file){
-        this.path = file
+    constructor (path){
+        this.folder = path 
+        this.path = path + '/productos.json'
         this.productos = []
+        this.properties = {
+            id: 0,
+            title: '',
+            description: '',
+            price: 0,
+            thumbnail: 'Sin imagen',
+            code: '',
+            status: true
+        }
     }
 
     chequeo(){
@@ -28,12 +38,35 @@ class ProductManager {
         this.#id = (Math.max(...this.productos.map(producto => producto.id)) + 1) // Busca cual es el ID mas grande y le suma 1
         // Esta solución me gusta mas que la anterior, pero van a quedar IDs vacios
         // La unica excepcion es cuando se borrara el ultimo ID de la lista, en ese caso se recicla
+
+        if (isFinite(this.#id) === false) {
+            this.#id = 1
+        }
+        // Si el archivo se inicializa con un objeto vacio, la evaluación anterior es igual a -Infinity
+        // De esta manera, al evaluarse un número infinito positivo, negativo, o NaN, simplemente revierte el valor a 1
+        // Podría traer problemas si el input de IDs al crear objetos fuese manual, pero en este caso debería ser siempre automático y transparente para el usuario
+
         return true
     }
 
     escritor(){
+        if (!fs.existsSync(this.folder)) fs.mkdirSync(this.folder, { recursive: true }) // Ahora si el directorio proporcionado no existe lo crea
         fs.writeFileSync(this.path, JSON.stringify(this.productos))
         return true
+    }
+
+    chequeoObjeto(a) {
+        let propiedades = this.properties
+        delete propiedades['id']
+
+        if (!('thumbnail' in a)) {
+            a.thumbnail = this.properties.thumbnail
+        }
+
+        let aKeys = Object.keys(a).sort()
+        let pKeys = Object.keys(propiedades).sort()
+        
+        return JSON.stringify(aKeys) === JSON.stringify(pKeys)
     }
 
     getProducts(){
@@ -56,28 +89,44 @@ class ProductManager {
     }
 
     addProduct(producto){
-        this.lector();
-        let chequeo = this.productos.find(x => x.code === producto.code);
-        if (chequeo != undefined){
-            console.warn(`addProduct() - Codigo ${code} repetido`)
+        if ('id' in producto) {
+            console.warn('addProduct() - El valor de ID no puede ser insertado')
             return false
         }
-        if (!producto.thumbnail) {
-            producto.thumbnail = 'Sin imagen'
-        }
-        if (!producto.status) {
-            producto.status = true
-        }
-        
-        producto = Object.assign({id: this.#id}, producto) // Para agregar el ID al principio del producto
-        // Mas adelante me tocará renegar con la validacion del tipo de dato
+        // Primer chequeo para que no incluyan ID en la propiedades
 
-        for(var key in producto) {
-            if(!producto[key]) {
-                console.warn(`addProduct() - Valor ${key} erroneo o vacio`)
+        if (!this.chequeoObjeto(producto)) {
+            console.warn(`addProduct() - Propiedad/es faltante/s`)
+            return false
+        }
+        // Segundo chequeo para validar las propiedades, que tenga todas las requeridas y sean validas; separe el ID para tener mejor trazabilidad del error.
+
+        if (!producto.thumbnail) { producto.thumbnail = this.properties.thumbnail}
+        // Porque si no lo incluyen tiene que ir a un default
+
+        for(var key in producto){
+            if (!producto[key]) {
+                console.warn(`addProduct() - La propiedad ${key} es erronea`)
+                return false
+            } else if (typeof producto[key] !== typeof this.properties[key]) {
+                console.warn(`addProduct() - La propiedad ${key} no es del tipo ${tipoRequerido}`)
                 return false
             }
         }
+        // Con este ultimo chequeo se vuelve obligatorio que los datos existan y sean del tipo requerido
+        // Igualmente siento que de alguna manera puedo modularizarlo
+        // Al final no renege tanto como pensaba, me faltaría validar que el string de thumbnail sea un path valido
+
+
+
+        this.lector();
+        let chequeo = this.productos.find(x => x.code === producto.code);
+        if (chequeo != undefined){
+            console.warn(`addProduct() - Codigo ${producto.code} repetido`)
+            return false
+        }
+        
+        producto = Object.assign({id: this.#id}, producto) // Para agregar el ID al principio del producto
 
         this.productos.push(producto)
         this.escritor();
@@ -85,16 +134,39 @@ class ProductManager {
     }
 
     updateProduct (id, update) {
+        if ('id' in update) {
+            console.warn('updateProduct() - El valor de ID no puede ser actualizado')
+            return false
+        }
+        // El ID no se debe poder actualizar
+        for(var key in update){
+            let tipoPropiedad = typeof update[key]
+            let tipoRequerido = typeof this.properties[key]
+            if (!update[key]) {
+                console.warn(`updateProduct() - La propiedad ${key} es erronea`)
+                return false
+            } else if (!(key in this.properties)){
+                console.warn(`updateProduct() - La propiedad ${key} no es valida`)
+                return false
+            } else if (tipoPropiedad !== tipoRequerido) {
+                console.warn(`updateProduct() - La propiedad ${key} no es del tipo ${tipoRequerido}`)
+                return false
+            }
+        }
+        // En addProduct hago la excepción para el thumbnail
+        // Aca no tiene sentido actualizar thumbnail por un valor falsey, solo para que vuelva a insertar el default
+
         this.lector();
+        
         let i = this.productos.findIndex(x => x.id === id)
         if (this.productos[i] == undefined) {
             console.warn('updateProduct() - ID no encontrado')
             return false
         }
-        
+
         let [property] = Object.keys(update); 
         let [value] = Object.values(update);
-        // Desestructura el array para usar la propiedad y el valor
+        // Desestructura el objeto para usar la propiedad y el valor
         // Mas adelante se puede reutilizar para cambiar mas de 1 campo en una sola llamada
         let busqueda = this.getProductById(id);
 
