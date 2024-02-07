@@ -8,6 +8,10 @@ class ProductManager {
         this.folder = path 
         this.path = path + file
         this.productos = []
+        this.response = {
+            code: 200,
+            message: 'Success'
+        }
         this.properties = {
             id: 0,
             title: '',
@@ -65,6 +69,13 @@ class ProductManager {
         return JSON.stringify(aKeys) === JSON.stringify(pKeys)
     }
 
+    resUpdate(response, message){
+        this.response.code = response
+        this.response.message = message
+        console.warn(message)
+        return this.response
+    }
+
     getProducts(){
         if (this.lector() !== true) {
             console.error('getProducts() - No se encontraron productos')
@@ -79,21 +90,18 @@ class ProductManager {
         if (busqueda != undefined) {
             return busqueda;
         } else {
-            console.warn('getProductsById() - ID no encontrado')
-            return false
+            return this.resUpdate(404, `ID ${id} no encontrado`)
         }
     }
 
     addProduct(producto){
         if ('id' in producto) {
-            console.warn('addProduct() - El valor de ID no puede ser insertado')
-            return false
+            return this.resUpdate(400, 'El valor id no puede ser especificado al crear un objeto')
         }
         // Primer chequeo para que no incluyan ID en la propiedades
 
         if (!this.chequeoObjeto(producto)) {
-            console.warn(`addProduct() - Propiedad/es faltante/s`)
-            return false
+            return this.resUpdate(400, 'Propiedades faltantes o inexistentes')
         }
         // Segundo chequeo para validar las propiedades, que tenga todas las requeridas y sean validas; separe el ID para tener mejor trazabilidad del error.
 
@@ -102,51 +110,44 @@ class ProductManager {
 
         for(var key in producto){
             if (!producto[key]) {
-                console.warn(`addProduct() - La propiedad ${key} es erronea`)
-                return false
+                return this.resUpdate(400, `El valor de la propiedad ${key} es erroneo`)
+
             } else if (typeof producto[key] !== typeof this.properties[key]) {
-                console.warn(`addProduct() - La propiedad ${key} no es del tipo ${tipoRequerido}`)
-                return false
+                return this.resUpdate(400, `El valor de la propiedad ${key} no es del tipo ${typeof this.properties[key]}`)
             }
         }
         // Con este ultimo chequeo se vuelve obligatorio que los datos existan y sean del tipo requerido
         // Igualmente siento que de alguna manera puedo modularizarlo
         // Al final no renege tanto como pensaba, me faltaría validar que el string de thumbnail sea un path valido
 
-
-
         this.lector();
         let chequeo = this.productos.find(x => x.code === producto.code);
         if (chequeo != undefined){
-            console.warn(`addProduct() - Codigo ${producto.code} repetido`)
-            return false
+            return this.resUpdate(400, `Codigo ${producto.code} repetido`)
         }
         
         producto = Object.assign({id: this.#id}, producto) // Para agregar el ID al principio del producto
 
         this.productos.push(producto)
         this.escritor();
-        return true
+        return this.resUpdate(200, 'Success')
     }
 
     updateProduct (id, update) {
         if ('id' in update) {
-            console.warn('updateProduct() - El valor de ID no puede ser actualizado')
-            return false
+            delete update['id']
+            console.warn('updateProduct() - Valor id removido de la solicitud') // No pueden actualizar el ID
         }
-        // El ID no se debe poder actualizar
+
         for(var key in update){
-            let tipoPropiedad = typeof update[key]
-            let tipoRequerido = typeof this.properties[key]
             if (!update[key]) {
-                console.warn(`updateProduct() - La propiedad ${key} es erronea`)
-                return false
+                return this.resUpdate(400, `La propiedad ${key} es erronea`)
             } else if (!(key in this.properties)){
-                console.warn(`updateProduct() - La propiedad ${key} no es valida`)
-                return false
-            } else if (tipoPropiedad !== tipoRequerido) {
-                console.warn(`updateProduct() - La propiedad ${key} no es del tipo ${tipoRequerido}`)
-                return false
+                delete update[key]
+                console.warn(`Propiedad ${key} removida`)
+                continue
+            } else if (typeof update[key] !== typeof this.properties[key]) {
+                return this.resUpdate(400, `La propiedad ${key} no es del tipo ${typeof this.properties[key]}`)
             }
         }
         // En addProduct hago la excepción para el thumbnail
@@ -156,8 +157,7 @@ class ProductManager {
         
         let i = this.productos.findIndex(x => x.id === id)
         if (this.productos[i] == undefined) {
-            console.warn('updateProduct() - ID no encontrado')
-            return false
+            return this.resUpdate(404, `ID ${id} no encontrado`)
         }
 
         let [property] = Object.keys(update); 
@@ -169,39 +169,19 @@ class ProductManager {
         busqueda[property] = value
         this.productos.splice((i), 1, busqueda)
         this.escritor()
-        return true
+        return this.resUpdate(200, 'Success')
     }
 
     deleteProduct (id) {
-        if (this.lector() !== true) { 
-            console.warn('deleteProduct() - Lectura fallida')
-            return false
-        }
+        this.lector()
         let i = this.productos.findIndex(x => x.id === id)
         if (this.productos[i] == undefined) {
-            console.warn('deleteProduct() - ID no encontrado')
-            return false
+            return this.resUpdate(404, `ID ${id} no encontrado`)
         }
         this.productos.splice((i), 1)
-        if (this.escritor() !== true) {
-            console.warn('deleteProduct() - Escritura fallida')
-            return false
-        }
-        return true
+        this.escritor() !== true
+        return this.resUpdate(200, 'Success')
     }
 }
 
 module.exports = ProductManager;
-
-// --------------------------------------------------------------------------
-
-// console.log(manager.addProduct('Producto 1', 'Este es el producto 1', 37, 'Sin imagen', 'PRD1', 11))
-// console.log(manager.addProduct('Producto 2', 'Este es el producto 2', 64, 'Sin imagen', 'PRD2', 12))
-// console.log(manager.addProduct('Producto 3', 'Este es el producto 3', 28, 'Sin imagen', 'PRD3', 13))
-// console.log(manager.addProduct('Producto 4', 'Este es el producto 4', 18, 'Sin imagen', 'PRD4', 14))
-// console.log(manager.addProduct('Producto 5', 'Este es el producto 5', 24, 'Sin imagen', 'PRD5', 15))
-// console.log(manager.addProduct('Producto 6', 'Este es el producto 6', 53, 'Sin imagen', 'PRD6', 16))
-// console.log(manager.addProduct('Producto 7', 'Este es el producto 7', 81, 'Sin imagen', 'PRD7', 17))
-// console.log(manager.addProduct('Producto 8', 'Este es el producto 8', 76, 'Sin imagen', 'PRD8', 18))
-// console.log(manager.addProduct('Producto 9', 'Este es el producto 9', 54, 'Sin imagen', 'PRD9', 19))
-// console.log(manager.addProduct('Producto 10', 'Este es el producto 10', 39, 'Sin imagen', 'PRD10', 110))

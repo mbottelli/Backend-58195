@@ -4,49 +4,49 @@ const router = Router();
 const products = require('../ProductManager')
 const manager = new products(__dirname+'/../files/', 'productos.json');
 
+let reqResponse
+
+
 router.get('/', (req, res) =>{
-    let producto = manager.getProducts();
+    reqResponse = manager.getProducts();
     const limit = req.query.limit;
     if(limit){
-        producto.splice(limit, producto.length)
+        reqResponse.splice(limit, reqResponse.length)
     };
-    res.send(producto);
+    res.send(reqResponse);
 });
 
 router.post('/', (req, res) =>{
-    if (manager.addProduct(req.body) === true) {
-        res.send({status:'Success'})
-    } else {
-        res.status(404).send({status:'Error'})
-    }
+    const io = req.app.get('io')
+    reqResponse = manager.addProduct(req.body)
+    io.emit('prodUpdate')
+    res.status(reqResponse.code).send(reqResponse)
 })
 
 router.get('/:ProductId', (req, res) =>{
     const id = Number(req.params.ProductId);
-    let producto = manager.getProductById(id);
-    if (!producto){
-        res.status(404).send({status:'Producto no existe'});
-        return;
+    reqResponse = manager.getProductById(id);
+    if ('code' in reqResponse){
+        res.status(reqResponse.code).send(reqResponse);
+    } else {
+        res.send(reqResponse);
     }
-    res.send(producto);
 })
 
 router.put('/:ProductId', (req,res) =>{
+    const io = req.app.get('io')
     const id = Number(req.params.ProductId);
-    if (manager.updateProduct(id, req.body) === true) {
-        res.send({status:'Success'})
-    } else {
-        res.status(404).send({status:'Error'})
-    }
+    reqResponse = manager.updateProduct(id, req.body)
+    io.emit('prodUpdate')
+    res.status(reqResponse.code).send(reqResponse)
 })
 
 router.delete('/:ProductId', (req,res) =>{
+    const io = req.app.get('io')
     const id = Number(req.params.ProductId);
-    if (manager.deleteProduct(id) === true) {
-        res.send({status:'Success'})
-    } else {
-        res.status(404).send({status:'Error'})
-    }
+    reqResponse = manager.deleteProduct(id)
+    io.emit('prodUpdate')
+    res.status(reqResponse.code).send(reqResponse)
 })
 
 module.exports = router;
