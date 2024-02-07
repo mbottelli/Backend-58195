@@ -20,11 +20,17 @@
         node src/app
         nodemon src/app
 
+Alternativamente, dentro de package.json se incluyen estos comandos como scripts para levantarlos como tareas
+
 ### Metodos
 
 Una vez ejecutada la aplicación, la misma va a levantar un servidor web en el puerto 8080. Dentro del servidor se pueden manejar tanto productos como carritos mediante los siguientes metodos:
 
 ### Productos
+
+- La ruta raíz devuelve el listado de productos existente al front; la ruta "/realtimeproducts" establece una conexión mediante socketio que mantiene la lista de productos actualizada
+
+      localhost:8080/realtimeproducts
 
 - La ruta "/api/products" puede ser llamada mediante GET para obtener el listado completo de los productos en el archivo JSON
 
