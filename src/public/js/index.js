@@ -9,8 +9,8 @@ async function caller() {
     let productos = await this.traeLista()
     for (let i = 0; i < productos.length; i++) {
         const producto = productos[i];
-        let { id, title, description, price, thumbnail, code, status } = producto
-        document.getElementById("productList").insertAdjacentHTML('beforeend', `<li>${id} - ${title} - ${description} - ${price} - ${thumbnail} - ${code} - ${status}</li>`)
+        let { _id, title, description, price, thumbnail, code, status } = producto
+        document.getElementById("productList").insertAdjacentHTML('beforeend', `<li>${_id} - ${title} - ${description} - ${price} - ${thumbnail} - ${code} - ${status}</li>`)
     }
 }
 window.onload = caller()

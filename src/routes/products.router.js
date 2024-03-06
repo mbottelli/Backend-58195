@@ -1,50 +1,45 @@
 const { Router } = require('express');
 const router = Router();
 
-const products = require('../ProductManager')
-const manager = new products(__dirname+'/../files/', 'productos.json');
+const products = require('../dao/dbManagers/ProductManager')
+const manager = new products()
 
 let reqResponse
 
-
-router.get('/', (req, res) =>{
-    reqResponse = manager.getProducts();
-    const limit = req.query.limit;
-    if(limit){
-        reqResponse.splice(limit, reqResponse.length)
-    };
+router.get('/', async (req, res) => {
+    reqResponse = await manager.getProducts(req.query.limit,req.query.page,req.query.sort,req.query.query)
     res.send(reqResponse);
 });
 
-router.post('/', (req, res) =>{
+router.post('/', async (req, res) =>{
     const io = req.app.get('io')
-    reqResponse = manager.addProduct(req.body)
+    reqResponse = await manager.addProduct(req.body)
     io.emit('prodUpdate')
     res.status(reqResponse.code).send(reqResponse)
 })
 
-router.get('/:ProductId', (req, res) =>{
-    const id = Number(req.params.ProductId);
-    reqResponse = manager.getProductById(id);
-    if ('code' in reqResponse){
+router.get('/:ProductId', async (req, res) =>{
+    const id = req.params.ProductId;
+    reqResponse = await manager.getProductById(id);
+    if ('message' in reqResponse){
         res.status(reqResponse.code).send(reqResponse);
     } else {
         res.send(reqResponse);
     }
 })
 
-router.put('/:ProductId', (req,res) =>{
+router.put('/:ProductId', async (req,res) =>{
     const io = req.app.get('io')
-    const id = Number(req.params.ProductId);
-    reqResponse = manager.updateProduct(id, req.body)
+    const id = req.params.ProductId;
+    reqResponse = await manager.updateProduct(id, req.body)
     io.emit('prodUpdate')
     res.status(reqResponse.code).send(reqResponse)
 })
 
-router.delete('/:ProductId', (req,res) =>{
+router.delete('/:ProductId', async (req,res) =>{
     const io = req.app.get('io')
-    const id = Number(req.params.ProductId);
-    reqResponse = manager.deleteProduct(id)
+    const id = req.params.ProductId;
+    reqResponse = await manager.deleteProduct(id)
     io.emit('prodUpdate')
     res.status(reqResponse.code).send(reqResponse)
 })

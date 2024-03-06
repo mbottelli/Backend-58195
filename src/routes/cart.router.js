@@ -1,32 +1,76 @@
 const { Router } = require('express');
 const router = Router();
+const mongoose = require('mongoose')
 
-const carts = require('../CartManager')
-const manager = new carts(__dirname+'/../files/', 'carritos.json');
+const carts = require('../dao/dbManagers/CartManager')
+const manager = new carts();
 
-router.post('/', (req, res) =>{
-    manager.addCart();
-    res.send({status: 'Success'})
+let reqResponse
+
+router.post('/', async (req,res) =>{
+    const io = req.app.get('io')
+    reqResponse = await manager.addCart();
+    io.emit('cartUpdate')
+    res.status(reqResponse.code).send(reqResponse)
 })
 
-router.get('/:cid', (req, res) =>{
-    const id = Number(req.params.cid)
-    let carrito = manager.getCart(id)
-    if (!carrito){
-        res.status(404).send({status:'Carrito no existe'})
-        return
-    }
-    res.send(carrito)
+// Hecho para debugear
+router.get('/all', async (req,res) =>{
+    reqResponse = await manager.getAllCarts()
+    res.send(reqResponse)
 })
 
-router.post('/:cid/products/:pid', (req, res) =>{
-    const cid = Number(req.params.cid)
-    const pid = Number(req.params.pid)
-    if (manager.addProduct(cid, pid, 1) === true) {
-        res.send({status: 'Success'})
+router.get('/:cid', async (req,res) =>{
+    const id = req.params.cid
+    reqResponse = await manager.getCart(id)
+    if ('message' in reqResponse){
+    res.status(reqResponse.code).send(reqResponse)
     } else {
-        res.status(404).send({status:'Error'})
+        res.send(reqResponse)
     }
+})
+
+router.put('/:cid', async(req,res) =>{
+    const io = req.app.get('io')
+    const cid =  new mongoose.Types.ObjectId(req.params.cid)
+    reqResponse = await manager.updateCart(cid, req.body)
+    io.emit('cartUpdate')
+    res.send(reqResponse)
+})
+
+router.delete('/:cid', async(req,res) =>{
+    const io = req.app.get('io')
+    const cid =  new mongoose.Types.ObjectId(req.params.cid)
+    reqResponse = await manager.deleteCart(cid)
+    io.emit('cartUpdate')
+    res.send(reqResponse)
+})
+
+router.post('/:cid/products/:pid', async (req,res) =>{
+    const io = req.app.get('io')
+    const cid =  new mongoose.Types.ObjectId(req.params.cid)
+    const pid =  new mongoose.Types.ObjectId(req.params.pid)
+    reqResponse = await manager.addProduct(cid,pid,1)
+    io.emit('cartUpdate')
+    res.status(reqResponse.code).send(reqResponse)
+})
+
+router.put('/:cid/products/:pid', async (req,res) => {
+    const io = req.app.get('io')
+    const cid =  new mongoose.Types.ObjectId(req.params.cid)
+    const pid =  new mongoose.Types.ObjectId(req.params.pid)
+    reqResponse = await manager.updateProduct(cid,pid,req.body)
+    io.emit('cartUpdate')
+    res.status(reqResponse.code).send(reqResponse)
+})
+
+router.delete('/:cid/products/:pid', async(req,res) =>{
+    const io = req.app.get('io')
+    const cid =  new mongoose.Types.ObjectId(req.params.cid)
+    const pid =  new mongoose.Types.ObjectId(req.params.pid)
+    reqResponse = await manager.deleteProduct(cid,pid)
+    io.emit('cartUpdate')
+    res.send(reqResponse)
 })
 
 module.exports = router;
