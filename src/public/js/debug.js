@@ -16,14 +16,11 @@ socket.on('prodResponse', (productos)=>{
     productos = productos.docs
     let resultado = ''
     for (let i = 0; i < productos.length; i++) {
-        
         resultado += '<li>'
         const producto = productos[i];
         for (var key in producto){
-            if (key == '__v') {
-                break
-            }
-            resultado += ' - ' + producto[key]
+            if (key == '__v') break
+            resultado += ' | ' + producto[key]
         }
         resultado += '</li>'
     }

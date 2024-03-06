@@ -23,11 +23,8 @@ router.get('/all', async (req,res) =>{
 router.get('/:cid', async (req,res) =>{
     const id = req.params.cid
     reqResponse = await manager.getCart(id)
-    if ('message' in reqResponse){
-    res.status(reqResponse.code).send(reqResponse)
-    } else {
-        res.send(reqResponse)
-    }
+    if ('message' in reqResponse) {res.status(reqResponse.code).send(reqResponse)}
+    else {res.send(reqResponse)}
 })
 
 router.put('/:cid', async(req,res) =>{
